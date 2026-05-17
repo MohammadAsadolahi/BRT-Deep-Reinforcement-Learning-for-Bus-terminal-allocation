@@ -1,15 +1,13 @@
 <div align="center">
 
-# 🚍 BRT-OptiRoute
+# BRT-Deep-Reinforcement-Learning-for-Bus-terminal-allocation
 
 ### Intelligent Bus Rapid Transit Allocation via Deep Reinforcement Learning
 
 [![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white)](https://python.org)
 [![PyTorch 2.0+](https://img.shields.io/badge/PyTorch-2.0%2B-EE4C2C?logo=pytorch&logoColor=white)](https://pytorch.org)
-[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 
-*A production-grade Double Deep Q-Network (DDQN) agent that learns optimal bus dispatching strategies in real-time, reducing passenger wait times across multi-line transit networks.*
+*A Double Deep Q-Network (DDQN) agent that learns bus dispatching strategies, reducing passenger wait times across multi-line transit networks.*
 
 [Getting Started](#-quick-start) · [Architecture](#-architecture) · [Results](#-results) · [How It Works](#-how-it-works) · [Configuration](#%EF%B8%8F-configuration)
 
@@ -17,30 +15,38 @@
 
 </div>
 
-## The Problem
+## Author
 
-Urban transit systems face a deceptively hard optimisation challenge: **given a finite fleet of buses, which line should the next bus be dispatched to — and when?**
+**Mohammad Asadolahi** — Senior Agentic AI Engineer
 
-Static schedules fail because passenger demand is stochastic, spatially uneven, and temporally varying. Over-serving one line starves another. Under-serving all lines causes cascading delays. The combinatorial explosion of fleet × lines × stations × time makes classical optimisation intractable at scale.
-
-## The Solution
-
-**BRT-OptiRoute** frames bus terminal allocation as a **Markov Decision Process** and solves it with a **Double Deep Q-Network** — a model-free reinforcement learning algorithm that:
-
-- **Observes** real-time passenger counts at every station and the position of every bus in the fleet.
-- **Decides** which transit line to dispatch the next available bus to (or to hold).
-- **Learns** from millions of simulated interactions to maximise long-term passenger throughput while minimising system-wide wait times.
-- **Generalises** — once trained, the agent responds to unseen demand patterns without retraining.
-
-> The trained agent **consistently outperforms random dispatch policies**, converging to strategies that balance fleet utilisation across lines proportional to demand intensity.
+- GitHub: [https://github.com/MohammadAsadolahi](https://github.com/MohammadAsadolahi)
+- Focus: Agentic AI Architectures In The Wild
 
 ---
 
-## 📐 Architecture
+## The Problem
+
+Urban transit systems face a hard optimisation challenge: **given a finite fleet of buses, which line should the next bus be dispatched to — and when?**
+
+Static schedules fail because passenger demand is stochastic, spatially uneven, and temporally varying. Over-serving one line starves another. Under-serving all lines causes cascading delays.
+
+## The Solution
+
+This project frames bus terminal allocation as a **Markov Decision Process** and solves it with a **Double Deep Q-Network** — a model-free reinforcement learning algorithm that:
+
+- **Observes** passenger counts at every station and the position of every bus in the fleet.
+- **Decides** which transit line to dispatch the next available bus to (or to hold).
+- **Learns** from simulated interactions to maximise long-term passenger throughput while minimising system-wide wait times.
+
+> The trained agent **outperforms a random dispatch policy** in the included comparison experiments.
+
+---
+
+## Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                     BRT-OptiRoute System                        │
+│                         System Overview                         │
 ├──────────────────┬──────────────────┬───────────────────────────┤
 │   Environment    │    DDQN Agent    │     Training Pipeline     │
 │                  │                  │                           │
@@ -61,22 +67,24 @@ Static schedules fail because passenger demand is stochastic, spatially uneven, 
 ### Project Structure
 
 ```
-BRT-OptiRoute/
+BRT-Deep-Reinforcement-Learning-for-Bus-terminal-allocation/
 ├── src/
 │   ├── __init__.py
 │   ├── environment.py       # BusTransitEnvironment — Gym-style MDP
-│   ├── replay_buffer.py     # High-performance circular replay buffer
+│   ├── replay_buffer.py     # Circular replay buffer
 │   └── agent.py             # QNetwork + DDQNAgent (Double DQN)
 ├── train.py                 # CLI entry-point: train, evaluate, compare
-├── models/                  # Saved model weights (auto-created)
-├── results/                 # Training curves & plots (auto-created)
+├── Bus_Environment          # Original environment prototype
+├── RL_Bus_Terminal_Allocation_DDQN.ipynb  # Jupyter notebook with experiments
+├── models/                  # Saved model weights (auto-created at runtime)
+├── results/                 # Training curves & plots (auto-created at runtime)
 ├── requirements.txt
 └── README.md
 ```
 
 ---
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Prerequisites
 
@@ -86,7 +94,7 @@ BRT-OptiRoute/
 ### Installation
 
 ```bash
-git clone https://github.com/<your-username>/BRT-Deep-Reinforcement-Learning-for-Bus-terminal-allocation.git
+git clone https://github.com/MohammadAsadolahi/BRT-Deep-Reinforcement-Learning-for-Bus-terminal-allocation.git
 cd BRT-Deep-Reinforcement-Learning-for-Bus-terminal-allocation
 
 pip install -r requirements.txt
@@ -110,11 +118,11 @@ python train.py --eval --model-path models/ddqn_bus.pt
 
 ---
 
-## 🧠 How It Works
+## How It Works
 
 ### 1. Environment — `BusTransitEnvironment`
 
-A faithful simulation of a multi-line BRT network:
+A simulation of a multi-line BRT network:
 
 | Component | Description |
 |-----------|-------------|
@@ -142,17 +150,17 @@ $$Q_{\text{target}} = r + \gamma \cdot Q_{\theta^{-}}\!\left(s', \underset{a'}{\
 
 $$\varepsilon_{t+1} = \max(\varepsilon_t \times 0.9999,\; 0.01)$$
 
-Starts fully exploratory ($\varepsilon = 1.0$) and anneals to 1% residual exploration, ensuring the agent continues to discover rare high-reward strategies.
+Starts fully exploratory ($\varepsilon = 1.0$) and anneals to 1% residual exploration.
 
 ### 4. Experience Replay
 
-A **1M-capacity circular buffer** stores $(s, a, r, s', d)$ tuples. Random mini-batch sampling of 64 transitions per step breaks temporal correlations and stabilises learning — a critical component for convergence with neural function approximators.
+A **1M-capacity circular buffer** stores $(s, a, r, s', d)$ tuples. Random mini-batch sampling of 64 transitions per step breaks temporal correlations and stabilises learning.
 
 ---
 
-## 📊 Results
+## Results
 
-After training, the agent produces three diagnostic plots saved to `results/`:
+After training, the agent produces diagnostic plots saved to `results/`:
 
 | Plot | Description |
 |------|-------------|
@@ -160,11 +168,9 @@ After training, the agent produces three diagnostic plots saved to `results/`:
 | `DDQN_avg_rewards.png` | Running average reward (convergence curve) |
 | `comparison.png` | Head-to-head: DDQN agent vs random dispatch policy |
 
-The DDQN agent learns to **preferentially dispatch buses to high-demand lines** (e.g., Line 2 with mean arrival rates of 6–9 passengers/station vs Line 1 with 1–4), resulting in significantly higher cumulative reward compared to uniform random dispatch.
-
 ---
 
-## ⚙️ Configuration
+## Configuration
 
 All hyperparameters are tunable via CLI flags:
 
@@ -186,9 +192,8 @@ Modify `DEFAULT_LINE_CONFIG` in [train.py](train.py) to define custom networks:
 
 ```python
 line_config = {
-    "downtown_express": [8, 12, 15, 20, 18, 14, 10],
-    "suburb_connector": [3, 4, 5, 6, 5, 4, 3, 2],
-    "airport_shuttle":  [10, 8, 6, 4, 2],
+    "line_1": [1, 2, 3, 3, 1, 3, 4, 4, 3, 4, 2, 1],
+    "line_2": [6, 7, 4, 3, 8, 9, 7, 6, 8, 9, 8, 3, 4, 4, 9, 9],
 }
 ```
 
@@ -196,37 +201,13 @@ Each list represents **mean passenger arrival rates** at sequential stations alo
 
 ---
 
-## 🔬 Technical Highlights
+## Technical Highlights
 
-- **Zero-dependency environment** — no OpenAI Gym installation required; the custom `BusTransitEnvironment` follows the Gym API contract (`reset()` / `step()`) for drop-in compatibility
-- **Pre-allocated NumPy replay buffer** — cache-friendly, zero-copy sampling; ~10× faster than list-based implementations at 1M capacity
-- **Device-agnostic** — seamless CPU/CUDA execution with automatic device detection
+- **Custom environment** — no OpenAI Gym installation required; the `BusTransitEnvironment` follows the Gym API contract (`reset()` / `step()`) for compatibility
+- **Pre-allocated NumPy replay buffer** — uses pre-allocated arrays for efficient sampling at 1M capacity
+- **Device-agnostic** — CPU/CUDA execution with automatic device detection
 - **Reproducible** — full seed control across NumPy, Python hash, PyTorch CPU & CUDA, and cuDNN
-- **Modular architecture** — environment, agent, and training loop are fully decoupled; swap in PPO, SAC, or any policy gradient method with no environment changes
 
 ---
 
-## 🗺️ Roadmap
-
-- [ ] Prioritised Experience Replay (PER) for faster convergence
-- [ ] Dueling DQN architecture (separate value/advantage streams)
-- [ ] Multi-agent dispatch (one agent per depot)
-- [ ] Integration with real-world GTFS transit data
-- [ ] Tensorboard / Weights & Biases logging
-- [ ] Gymnasium wrapper for standardised benchmarking
-
----
-
-## 📄 License
-
-This project is licensed under the MIT License — see [LICENSE](LICENSE) for details.
-
----
-
-<div align="center">
-
-**Built with curiosity and PyTorch.**
-
-*If this project helped you, consider giving it a ⭐*
-
-</div>
+this readme is AI assisted generated, so check for mistakes
